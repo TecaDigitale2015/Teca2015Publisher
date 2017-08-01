@@ -7,6 +7,14 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
+solr-5.2.1/
+solrSchema/
+trash/
+batch/
+confTeca/
+confTecaBaronissi/
+confTecaRiccardiana/
+configurazione/
 
 # Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
 !/.mvn/wrapper/maven-wrapper.jar
