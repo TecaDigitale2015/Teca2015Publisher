@@ -41,11 +41,37 @@
 				<directory>${basedir}/src/main/resources</directory>
 				<includes>
 					<include>**/*.gwt.xml</include>
-					<include>**/log4j.xml</include>
-					<include>**/log4j.dtd</include>
 				</includes>
 			</resource>
 		</resources>
+		<plugins>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>mx.teca2015.tecaPublished.standAlone.TecaPublishStandAlone</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<finalName>TecaPublishStandAlone</finalName>
+					<appendAssemblyId>false</appendAssemblyId>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+
+				</executions>
+			</plugin>
+		</plugins>
 	</build>
 	<dependencies>
 		<dependency>
@@ -77,6 +103,11 @@
 			<groupId>xml-apis</groupId>
 			<artifactId>xml-apis</artifactId>
 			<version>1.4.01</version>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>6.0.4</version>
 		</dependency>
 	</dependencies>
 	<version>1.0.3</version>
