@@ -46,7 +46,7 @@ public class TecaPublishStandAlone extends QuartzScheduler {
 	 */
 	public TecaPublishStandAlone(boolean processing, String fileQuartz, Integer socketPort, boolean closeSocket,
 			boolean reScheduling) throws SchedulerException {
-		super(processing, fileQuartz, socketPort, closeSocket, reScheduling);
+		super(processing, fileQuartz, socketPort, closeSocket, reScheduling, true);
 	}
 
 	/**

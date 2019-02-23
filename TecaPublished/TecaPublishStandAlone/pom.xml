@@ -77,12 +77,12 @@
 		<dependency>
 			<groupId>mx.teca2015.tecaUtility.tecaSolr</groupId>
 			<artifactId>TecaSolr</artifactId>
-			<version>1.0.4</version>
+			<version>1.0.8</version>
 		</dependency>
 		<dependency>
 			<groupId>mx.randalf.mag</groupId>
 			<artifactId>RandalfMag</artifactId>
-			<version>1.0.15</version>
+			<version>1.0.28</version>
 		</dependency>
 		<dependency>
 			<groupId>jexcelapi</groupId>
@@ -92,12 +92,7 @@
 		<dependency>
 			<groupId>mx.randalf.schedaF</groupId>
 			<artifactId>RandalfSchedaF</artifactId>
-			<version>1.0.1</version>
-		</dependency>
-		<dependency>
-			<groupId>mx.randalf.quartz</groupId>
-			<artifactId>RandalfQuartzCore</artifactId>
-			<version>1.0.6</version>
+			<version>1.0.3</version>
 		</dependency>
 		<dependency>
 			<groupId>xml-apis</groupId>
@@ -110,5 +105,5 @@
 			<version>6.0.4</version>
 		</dependency>
 	</dependencies>
-	<version>1.0.3</version>
+	<version>1.0.6</version>
 </project>

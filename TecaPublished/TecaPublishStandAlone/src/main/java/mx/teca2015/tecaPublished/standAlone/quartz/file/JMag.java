@@ -10,6 +10,7 @@ import it.sbn.iccu.metaag1.Metadigit;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.UUID;
 
@@ -87,17 +88,20 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 						Configuration.getValue("solr.collection"),
 						Integer.parseInt(Configuration.getValue("solr.connectionTimeOut")),
 						Integer.parseInt(Configuration.getValue("solr.clientTimeOut")));
-				query = "+bid:\"" + md.getBib().getIdentifier().get(0).getContent().get(0) + "\"";
+				query = "+bid:\"" + md.getBib().getIdentifier().get(0).getContent().get(0).replace("\\", "") + "\"";
 
 				if (md.getBib().getPiece() != null) {
 					if (md.getBib().getPiece().getYear() != null || md.getBib().getPiece().getPartNumber() != null) {
-						query += " +piecegr:\"" + (md.getBib().getPiece().getYear() != null
-								? md.getBib().getPiece().getYear() : md.getBib().getPiece().getPartNumber().toString())
+						query += " +piecegr:\""
+								+ (md.getBib().getPiece().getYear() != null ? md.getBib().getPiece().getYear()
+										: md.getBib().getPiece().getPartNumber().toString())
 								+ "\"";
 					}
 					if (md.getBib().getPiece().getIssue() != null || md.getBib().getPiece().getPartName() != null) {
-						query += " +piecedt:\"" + (md.getBib().getPiece().getIssue() != null
-								? md.getBib().getPiece().getIssue() : md.getBib().getPiece().getPartName()) + "\"";
+						query += " +piecedt:\""
+								+ (md.getBib().getPiece().getIssue() != null ? md.getBib().getPiece().getIssue()
+										: md.getBib().getPiece().getPartName())
+								+ "\"";
 					}
 				}
 
@@ -158,17 +162,20 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 			// params.add(ItemTeca._ROOT_, objectIdentifier);
 			params.add(ItemTeca.TIPOOGGETTO, ItemTeca.TIPOOGGETTO_DOCUMENTO);
 			params.add(ItemTeca.TIPOLOGIAFILE, ItemTeca.TIPOLOGIAFILE_MAG);
-			if (folder.getTipoRisorsa() != null){
+			if (folder.getTipoRisorsa() != null) {
 				params.add(ItemTeca.TIPORISORSA, folder.getTipoRisorsa());
+			} else {
+				read(ItemTeca.TIPORISORSA, md.getBib().getType());
 			}
-			if (folder.getFondo() != null){
+			if (folder.getFondo() != null) {
 				params.add(ItemTeca.FONDO, folder.getFondo());
 			}
 			params.add(ItemTeca.ORIGINALFILENAME, filename);
 
 			if (md.getBib().getLevel() != null) {
-				params.add(ItemTeca.TIPODOCUMENTO, (md.getBib().getLevel().equals(BibliographicLevel.M)
-						? ItemTeca.TIPODOCUMENTO_LIBRODIGITALIZZATO : ItemTeca.TIPODOCUMENTO_PERIODICODIGITALIZZATO));
+				params.add(ItemTeca.TIPODOCUMENTO,
+						(md.getBib().getLevel().equals(BibliographicLevel.M) ? ItemTeca.TIPODOCUMENTO_LIBRODIGITALIZZATO
+								: ItemTeca.TIPODOCUMENTO_PERIODICODIGITALIZZATO));
 			}
 			read(ItemTeca.BID, md.getBib().getIdentifier());
 			read(ItemTeca.TITOLO, md.getBib().getTitle());
@@ -178,7 +185,6 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 			read(ItemTeca.DESCRIZIONE, md.getBib().getDescription());
 			read(ItemTeca.CONTRIBUTO, md.getBib().getContributor());
 			read(ItemTeca.DATA, md.getBib().getDate());
-			read(ItemTeca.TIPORISORSA, md.getBib().getType());
 			read(ItemTeca.FORMATO, md.getBib().getFormat());
 			read(ItemTeca.FONTE, md.getBib().getSource());
 			read(ItemTeca.LINGUA, md.getBib().getLanguage());
@@ -205,13 +211,22 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 			for (int x = 0; x < values.size(); x++) {
 				sValues = ((SimpleLiteral) values.get(x)).getContent();
 				for (int y = 0; y < sValues.size(); y++) {
-					params.add(key, sValues.get(y));
+					if (key.equals(ItemTeca.BID)) {
+						params.add(key, sValues.get(y).replace("\\", ""));
+					} else {
+						params.add(key, sValues.get(y));
+					}
 				}
 			}
 		}
 	}
 
 	private void read(Piece value) {
+		String stpieceper = null;
+		String testo = null;
+		int pos = 0;
+		String[] st = null;
+
 		if (value != null) {
 			if (value.getYear() != null || value.getPartNumber() != null) {
 				params.add(ItemTeca.PIECEGR,
@@ -223,7 +238,71 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 			if (value.getStpiecePer() != null || value.getStpieceVol() != null) {
 				params.add(ItemTeca.PIECEIN,
 						(value.getStpiecePer() != null ? value.getStpiecePer() : value.getStpieceVol()));
+
+				if (value.getStpiecePer() != null) {
+					stpieceper = value.getStpiecePer();
+					if (stpieceper.startsWith("(")) {
+						stpieceper = stpieceper.substring(1);
+						pos = stpieceper.indexOf(")");
+						if (pos > -1) {
+							testo = stpieceper.substring(0, pos);
+							stpieceper = stpieceper.substring(pos + 1);
+							if (testo.length() > 4) {
+								testo = testo.substring(4);
+								if (testo.length() > 2) {
+									params.add(ItemTeca.PIECEMESE, testo.substring(0, 2));
+									params.add(ItemTeca.PIECEMESEDESCR, convertMese(testo.substring(0, 2)));
+									testo = testo.substring(2);
+									if (testo.length() > 2) {
+										params.add(ItemTeca.PIECEGIORNO, testo.substring(0, 2));
+									} else {
+										params.add(ItemTeca.PIECEGIORNO, testo);
+									}
+								} else {
+									params.add(ItemTeca.PIECEMESE, testo);
+									params.add(ItemTeca.PIECEMESEDESCR, convertMese(testo));
+								}
+							}
+						}
+					}
+					if (stpieceper.length()>0) {
+						st = stpieceper.split(":");
+						params.add(ItemTeca.PIECEANNATA, st[0]);
+					}
+				}
 			}
+		}
+	}
+
+	private String convertMese(String numero) {
+		Hashtable<String, String> mesi = null;
+
+		mesi = new Hashtable<String, String>();
+		mesi.put("01", "gennaio");
+		mesi.put("02", "febbraio");
+		mesi.put("03", "marzo");
+		mesi.put("04", "aprile");
+		mesi.put("05", "maggio");
+		mesi.put("06", "giugno");
+		mesi.put("07", "luglio");
+		mesi.put("08", "agosto");
+		mesi.put("09", "settembre");
+		mesi.put("10", "ottobre");
+		mesi.put("11", "novembre");
+		mesi.put("12", "dicembre");
+		mesi.put("21", "Primavera");
+		mesi.put("22", "Estate");
+		mesi.put("23", "Autunno");
+		mesi.put("24", "Inverno");
+		mesi.put("31", "primo quarto");
+		mesi.put("32", "secondo quarto");
+		mesi.put("33", "terzo quarto");
+		mesi.put("34", "quarto quarto");
+		
+		if (mesi.get(numero)==null) {
+			return numero;
+		} else {
+			return mesi.get(numero);
 		}
 	}
 
