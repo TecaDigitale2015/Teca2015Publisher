@@ -3,17 +3,29 @@
  */
 package mx.teca2015.tecaPublished.standAlone.quartz.file;
 
-import it.sbn.iccu.metaag1.Bib.Holdings;
-import it.sbn.iccu.metaag1.Bib.Piece;
-import it.sbn.iccu.metaag1.BibliographicLevel;
-import it.sbn.iccu.metaag1.Metadigit;
-
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.log4j.Logger;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
+import org.purl.dc.elements._1.SimpleLiteral;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.quartz.SchedulerException;
+
+import it.sbn.iccu.metaag1.Bib.Holdings;
+import it.sbn.iccu.metaag1.Bib.Piece;
+import it.sbn.iccu.metaag1.BibliographicLevel;
+import it.sbn.iccu.metaag1.Metadigit;
+import it.sbn.iccu.metaag1.Ocr;
 import mx.randalf.configuration.Configuration;
 import mx.randalf.configuration.exception.ConfigurationException;
 import mx.randalf.mag.MagNamespacePrefix;
@@ -27,15 +39,6 @@ import mx.teca2015.tecaPublished.standAlone.quartz.folder.Folder;
 import mx.teca2015.tecaPublished.standAlone.quartz.folder.JFolder;
 import mx.teca2015.tecaUtility.solr.IndexDocumentTeca;
 import mx.teca2015.tecaUtility.solr.item.ItemTeca;
-
-import org.apache.log4j.Logger;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocumentList;
-import org.purl.dc.elements._1.SimpleLiteral;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.SchedulerException;
 
 /**
  * @author massi
@@ -194,6 +197,7 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 
 			read(md.getBib().getPiece());
 			read(md.getBib().getHoldings());
+			readOcr(md.getOcr(), new File(filename).getParentFile());
 
 			params.add(ItemTeca.XML, mdXsd.write(md, new MagNamespacePrefix(), null, null, null));
 
@@ -205,8 +209,58 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 		}
 	}
 
+	private void readOcr(List<Ocr> ocrs, File pathMag) throws SolrException {
+		File fOcr = null;
+
+		if (ocrs != null && ocrs.size()>0) {
+			for (Ocr ocr : ocrs) {
+				fOcr = new File(pathMag.getAbsolutePath()+
+						File.separator+
+						ocr.getFile().getHref());
+				if (fOcr.exists()) {
+					read(ItemTeca.OCR, fOcr);
+				}
+			}
+		}
+	}
+
+	private void read(String key, File file) throws SolrException {
+		FileReader fr = null;
+		BufferedReader br = null;
+		String line = null;
+		String testo = "";
+		
+		try {
+			fr = new FileReader(file);
+			br = new BufferedReader(fr);
+			while((line = br.readLine())!= null) {
+				if (line != null && !line.trim().equals("")) {
+					if (!testo.equals("")) {
+						testo+="\n";
+					}
+					testo+=line;
+				}
+			}
+			params.add(key, testo.trim());
+		} catch (IOException e) {
+			throw new SolrException(e.getMessage(), e);
+		} finally {
+			try {
+				if (br != null) {
+					br.close();
+				}
+				if (fr != null) {
+					fr.close();
+				}
+			} catch (IOException e) {
+				throw new SolrException(e.getMessage(), e);
+			}
+		}
+	}
+
 	private void read(String key, List<SimpleLiteral> values) {
 		List<String> sValues = null;
+		String testo = null;
 		if (values != null) {
 			for (int x = 0; x < values.size(); x++) {
 				sValues = ((SimpleLiteral) values.get(x)).getContent();
@@ -214,7 +268,15 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 					if (key.equals(ItemTeca.BID)) {
 						params.add(key, sValues.get(y).replace("\\", ""));
 					} else {
-						params.add(key, sValues.get(y));
+						if (key.equals(ItemTeca.TITOLO)) {
+							testo = sValues.get(y);
+							testo = testo.replace("Il Piccolo della sera: edizione della sera del Piccolo", 
+									              "Il Piccolo della sera : edizione della sera del Piccolo");
+							testo = testo.replace("\t", " ");
+							params.add(key, testo.trim());
+						} else {
+							params.add(key, sValues.get(y));
+						}
 					}
 				}
 			}
@@ -226,6 +288,8 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 		String testo = null;
 		int pos = 0;
 		String[] st = null;
+		DecimalFormat df3 = new DecimalFormat("000");
+		String issue = null;
 
 		if (value != null) {
 			if (value.getYear() != null || value.getPartNumber() != null) {
@@ -233,7 +297,16 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 						(value.getYear() != null ? value.getYear() : value.getPartNumber().toString()));
 			}
 			if (value.getIssue() != null || value.getPartName() != null) {
-				params.add(ItemTeca.PIECEDT, (value.getIssue() != null ? value.getIssue() : value.getPartName()));
+				if (value.getIssue() != null) {
+					issue = value.getIssue();
+					issue = issue.replace(", ed. del mattino","");
+					issue = issue.replace(", ed.del mattino","");
+					issue = issue.replace(", ed. del pomeriggio","");
+					issue = issue.replace(", ed. della sera","");
+					params.add(ItemTeca.PIECEDT, issue);
+				} else {
+					params.add(ItemTeca.PIECEDT, value.getPartName());
+				}
 			}
 			if (value.getStpiecePer() != null || value.getStpieceVol() != null) {
 				params.add(ItemTeca.PIECEIN,
@@ -267,7 +340,7 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 					}
 					if (stpieceper.length()>0) {
 						st = stpieceper.split(":");
-						params.add(ItemTeca.PIECEANNATA, st[0]);
+						params.add(ItemTeca.PIECEANNATA, df3.format(new Long(st[0])));
 					}
 				}
 			}
