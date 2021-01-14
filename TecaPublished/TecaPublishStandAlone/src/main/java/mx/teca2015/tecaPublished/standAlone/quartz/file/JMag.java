@@ -289,6 +289,7 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 		int pos = 0;
 		String[] st = null;
 		DecimalFormat df3 = new DecimalFormat("000");
+		DecimalFormat df8 = new DecimalFormat("00000000");
 		String issue = null;
 
 		if (value != null) {
@@ -303,6 +304,10 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 					issue = issue.replace(", ed.del mattino","");
 					issue = issue.replace(", ed. del pomeriggio","");
 					issue = issue.replace(", ed. della sera","");
+					if (issue.trim().endsWith("supplemento")) {
+						issue = issue.trim();
+						issue += " 1";
+					}
 					params.add(ItemTeca.PIECEDT, issue);
 				} else {
 					params.add(ItemTeca.PIECEDT, value.getPartName());
@@ -341,6 +346,31 @@ public class JMag extends JFile<Metadigit, MagXsd> {
 					if (stpieceper.length()>0) {
 						st = stpieceper.split(":");
 						params.add(ItemTeca.PIECEANNATA, df3.format(new Long(st[0])));
+						if (st.length==4) {
+							params.add(ItemTeca.PIECEFASCICOLO, df8.format(new Long(st[1]+st[2])));
+							if (st[3].indexOf("+")>-1) {
+								params.add(ItemTeca.PIECESUPPLEMENTO, df3.format(new Long(st[3].replace("+", ""))));
+								params.add(ItemTeca.PIECESTRAORDINARIA, df3.format(0));
+							} else if (st[3].indexOf("*")>-1) {
+								params.add(ItemTeca.PIECESTRAORDINARIA, df3.format(new Long(st[3].replace("*", ""))));
+								params.add(ItemTeca.PIECESUPPLEMENTO, df3.format(0));
+							} else {
+								params.add(ItemTeca.PIECESTRAORDINARIA, df3.format(0));
+								params.add(ItemTeca.PIECESUPPLEMENTO, df3.format(0));
+							}
+						} else if (st.length==3) {
+							params.add(ItemTeca.PIECEFASCICOLO, df8.format(new Long(st[1])));
+							if (st[2].indexOf("+")>-1) {
+								params.add(ItemTeca.PIECESUPPLEMENTO, df3.format(new Long(st[2].replace("+", ""))));
+								params.add(ItemTeca.PIECESTRAORDINARIA, df3.format(0));
+							} else if (st[3].indexOf("*")>-1) {
+								params.add(ItemTeca.PIECESTRAORDINARIA, df3.format(new Long(st[2].replace("*", ""))));
+								params.add(ItemTeca.PIECESUPPLEMENTO, df3.format(0));
+							} else {
+								params.add(ItemTeca.PIECESTRAORDINARIA, df3.format(0));
+								params.add(ItemTeca.PIECESUPPLEMENTO, df3.format(0));
+							}
+						}
 					}
 				}
 			}

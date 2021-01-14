@@ -10,8 +10,8 @@
 	<artifactId>TecaPublishStandAlone</artifactId>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>1.9</maven.compiler.source>
+		<maven.compiler.target>1.9</maven.compiler.target>
 	</properties>
 	<repositories>
 		<repository>
@@ -77,7 +77,7 @@
 		<dependency>
 			<groupId>mx.teca2015.tecaUtility.tecaSolr</groupId>
 			<artifactId>TecaSolr</artifactId>
-			<version>1.0.10</version>
+			<version>1.0.11</version>
 		</dependency>
 		<dependency>
 			<groupId>mx.randalf.mag</groupId>
@@ -105,5 +105,5 @@
 			<version>6.0.4</version>
 		</dependency>
 	</dependencies>
-	<version>1.0.10</version>
+	<version>1.0.11</version>
 </project>
